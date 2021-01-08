@@ -8,6 +8,11 @@ OBSTACLE_SPEED = 200 #pixels/s
 OBSTACLE_SPAWN_INTERVAL = 1.3 #seconds
 OBSTACLE_GAP = 100 #pixels
 
+Rect = DefStruct.new{{
+  pos: Vector[0,0],
+  size: Vector[0,0]
+}}
+
 GameState = DefStruct.new {{
   scroll_x: 0,
   player_position: Vector[0, 0],
@@ -79,6 +84,32 @@ class GameWindow < Gosu::Window
 
     @images[:player].draw(20, @state.player_position.y, 0)
 
+    debug_draw
+  end
+
+    def debug_draw
+      draw_debug_rect(Rect.new(pos: Vector[100,100], size: Vector[200,300]))
+    end
+    
+    def draw_debug_rect(rect)
+      color = Gosu::Color::GREEN;
+      x = rect.pos.x
+      y = rect.pos.y
+      w = rect.size.x
+      h = rect.size.y
+
+      points = [
+        Vector[x, y],
+        Vector[x + width, y],
+        Vector[x + width, y + height],
+        Vector[x, y + height]
+      ]
+
+      points.each_with_index do |p1,idx|
+        p2 = points[(idx + 1 ) % points.size]
+        draw_line(p1.x, p1.y, color, p2.x, p2.y, color)
+    end  
+      
   end
 end
 
