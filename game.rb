@@ -36,7 +36,7 @@ class GameWindow < Gosu::Window
   end
 
   def spawn_obstacle
-    @state.obstacles << Vector[width, 100]
+    @state.obstacles << Vector[width, rand(50...320)]
   end
 
   def update
