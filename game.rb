@@ -15,7 +15,7 @@ Rect = DefStruct.new{{
 
 GameState = DefStruct.new {{
   scroll_x: 0,
-  player_position: Vector[0, 0],
+  player_position: Vector[20, 0], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
   obstacles: [], # Array of Vec
   obstacle_countdown: OBSTACLE_SPAWN_INTERVAL
@@ -88,7 +88,12 @@ class GameWindow < Gosu::Window
   end
 
     def debug_draw
-      draw_debug_rect(Rect.new(pos: Vector[10,10], size: Vector[20,30]))
+      player_rect = Rect.new(
+        pos: @state.player_position, 
+        size: Vector[@images[:player].width, @images[:player].height]
+      )
+
+      draw_debug_rect(player_rect)
     end
     
     def draw_debug_rect(rect)
