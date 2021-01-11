@@ -103,6 +103,13 @@ class GameWindow < Gosu::Window
         )
 
         draw_debug_rect(top)
+
+        bottom = Rect.new(
+          pos: Vector[obstacle.x, obstacle.y + OBSTACLE_GAP],
+          size: Vector[@images[:obstacle].width, @images[:obstacle].height]
+        )
+
+        draw_debug_rect(bottom)
       end
     end
     
