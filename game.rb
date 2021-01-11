@@ -94,6 +94,16 @@ class GameWindow < Gosu::Window
       )
 
       draw_debug_rect(player_rect)
+
+      img_y = @images[:obstacle].height
+      @state.obstacles.each do |obstacle|
+        top = Rect.new(
+          pos: Vector[obstacle.x, obstacle.y - img_y],
+          size: Vector[@images[:obstacle].width, @images[:obstacle].height]
+        )
+
+        draw_debug_rect(top)
+      end
     end
     
     def draw_debug_rect(rect)
