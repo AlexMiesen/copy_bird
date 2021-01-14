@@ -14,6 +14,7 @@ Rect = DefStruct.new{{
 }}
 
 GameState = DefStruct.new {{
+  alive: true,
   scroll_x: 0,
   player_position: Vector[20, 0], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
@@ -65,7 +66,15 @@ class GameWindow < Gosu::Window
     @state.obstacles.each do |obst|
       obst.x -= delta_time * OBSTACLE_SPEED
     end
+
+    if player_is_colliding?
+      @state.alive = false
+    end
   end
+
+  def player_is_colliding?
+
+  end  
 
   def draw
     @images[:background].draw(0, 0, 0)
@@ -87,29 +96,28 @@ class GameWindow < Gosu::Window
     debug_draw
   end
 
+  def player_rect
+    Rect.new(
+      pos: @state.player_position, 
+      size: Vector[@images[:player].width, @images[:player].height]
+    )
+  end
+
+  def obstacle_rects
+    img_y = @images[:obstacle].height
+    obst_size = Vector[@images[:obstacle].width, @images[:obstacle].height]
+
+    @state.obstacles.flat_map do |obstacle|
+    top = Rect.new(pos: Vector[obstacle.x, obstacle.y - img_y],size: obst_size)
+    bottom = Rect.new(pos: Vector[obstacle.x, obstacle.y + OBSTACLE_GAP],size: obst_size)
+    [top,bottom]
+    end
+  end  
+
     def debug_draw
-      player_rect = Rect.new(
-        pos: @state.player_position, 
-        size: Vector[@images[:player].width, @images[:player].height]
-      )
-
       draw_debug_rect(player_rect)
-
-      img_y = @images[:obstacle].height
-      @state.obstacles.each do |obstacle|
-        top = Rect.new(
-          pos: Vector[obstacle.x, obstacle.y - img_y],
-          size: Vector[@images[:obstacle].width, @images[:obstacle].height]
-        )
-
-        draw_debug_rect(top)
-
-        bottom = Rect.new(
-          pos: Vector[obstacle.x, obstacle.y + OBSTACLE_GAP],
-          size: Vector[@images[:obstacle].width, @images[:obstacle].height]
-        )
-
-        draw_debug_rect(bottom)
+      obstacle_rects.each do |obst_rect|
+        draw_debug_rect(obst_rect)
       end
     end
     
