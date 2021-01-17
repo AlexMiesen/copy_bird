@@ -7,6 +7,8 @@ JUMP_VELOCITY = Vector[0, -300]
 OBSTACLE_SPEED = 200 #pixels/s
 OBSTACLE_SPAWN_INTERVAL = 1.3 #seconds
 OBSTACLE_GAP = 100 #pixels
+DEATH_VELOCITY = Vector[50,-500] # pixels per second
+DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
 
 Rect = DefStruct.new{{
   pos: Vector[0,0],
@@ -23,6 +25,7 @@ GameState = DefStruct.new {{
   scroll_x: 0,
   player_position: Vector[20, 0], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
+  player_rotation: 0,
   obstacles: [], # Array of Vec
   obstacle_countdown: OBSTACLE_SPAWN_INTERVAL
 }}
@@ -42,7 +45,7 @@ class GameWindow < Gosu::Window
   def button_down(button)
     case button
     when Gosu::KbEscape then close
-    when Gosu::KbSpace then @state.player_velocity.set!(JUMP_VELOCITY)
+    when Gosu::KbSpace then @state.player_velocity.set!(JUMP_VELOCITY) if @state.alive 
     end
   end
 
@@ -72,9 +75,14 @@ class GameWindow < Gosu::Window
       obst.x -= delta_time * OBSTACLE_SPEED
     end
 
-    if player_is_colliding?
+    if @state.alive && player_is_colliding?
       @state.alive = false
+      @state.player_velocity.set!(DEATH_VELOCITY)
     end
+
+    unless @state.alive
+      @state.player_rotation += delta_time * DEATH_ROTATIONAL_VELOCITY
+    end  
   end
 
   def player_is_colliding?
@@ -108,9 +116,14 @@ class GameWindow < Gosu::Window
       end
     end
 
-    @images[:player].draw(20, @state.player_position.y, 0)
+    @images[:player].draw_rot(
+      @state.player_position.x, @state.player_position.y, 
+      0, @state.player_rotation,
+      0,
+      0)
 
-    debug_draw
+    #uncomment this out to turn the debugger on)
+    #debug_draw
   end
 
   def player_rect
