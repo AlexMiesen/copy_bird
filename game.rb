@@ -6,7 +6,7 @@ GRAVITY = Vector[0, 600] #this is an acceleration so pixels per second per secon
 JUMP_VELOCITY = Vector[0, -300]
 OBSTACLE_SPEED = 200 #pixels/s
 OBSTACLE_SPAWN_INTERVAL = 1.3 #seconds
-OBSTACLE_GAP = 100 #pixels
+OBSTACLE_GAP = 140 #pixels
 DEATH_VELOCITY = Vector[50,-500] # pixels per second
 DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
 
@@ -21,6 +21,7 @@ Rect = DefStruct.new{{
 end 
 
 GameState = DefStruct.new {{
+  score: 0,
   started: false,
   alive: true,
   scroll_x: 0,
@@ -34,6 +35,7 @@ GameState = DefStruct.new {{
 class GameWindow < Gosu::Window
   def initialize(*args)
     super
+    @font = Gosu::Font.new(self, Gosu.default_font_name, 40)
     @images = {
       background: Gosu::Image.new(self, 'images/background.png', false),
       foreground: Gosu::Image.new(self, 'images/foreground.png', true),
@@ -125,6 +127,8 @@ class GameWindow < Gosu::Window
 
     #uncomment this out to turn the debugger on
     #debug_draw
+
+    @font.draw_rel(@state.score, width/2.0, 60, 0, 0.5, 0.5)
   end
 
   def player_rect
