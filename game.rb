@@ -21,9 +21,10 @@ Rect = DefStruct.new{{
 end 
 
 GameState = DefStruct.new {{
+  started: false,
   alive: true,
   scroll_x: 0,
-  player_position: Vector[20, 0], # 20 moves the player slightly away from the left of the screen
+  player_position: Vector[20, 250], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
   player_rotation: 0,
   obstacles: [], # Array of Vec
@@ -45,12 +46,10 @@ class GameWindow < Gosu::Window
   def button_down(button)
     case button
     when Gosu::KbEscape then close
-    when Gosu::KbSpace then @state.player_velocity.set!(JUMP_VELOCITY) if @state.alive 
+    when Gosu::KbSpace
+      @state.player_velocity.set!(JUMP_VELOCITY) if @state.alive 
+      @state.started = true
     end
-  end
-
-  def spawn_obstacle
-    @state.obstacles << Vector[width, rand(50...320)]
   end
 
   def update
@@ -61,12 +60,14 @@ class GameWindow < Gosu::Window
         @state.scroll_x = 0
       end
 
+    return unless @state.started  
+
     @state.player_velocity += delta_time * GRAVITY
     @state.player_position += delta_time * @state.player_velocity
 
     @state.obstacle_countdown -= delta_time
     if @state.obstacle_countdown <= 0
-      spawn_obstacle
+      @state.obstacles << Vector[width, rand(50...320)]
       @state.obstacle_countdown += OBSTACLE_SPAWN_INTERVAL
     end
 
@@ -122,7 +123,7 @@ class GameWindow < Gosu::Window
       0,
       0)
 
-    #uncomment this out to turn the debugger on)
+    #uncomment this out to turn the debugger on
     #debug_draw
   end
 
