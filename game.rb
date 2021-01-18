@@ -9,6 +9,7 @@ OBSTACLE_SPAWN_INTERVAL = 1.3 #seconds
 OBSTACLE_GAP = 140 #pixels
 DEATH_VELOCITY = Vector[50,-500] # pixels per second
 DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
+RESTART_INTERVAL = 3 #seconds
 
 Rect = DefStruct.new{{
   pos: Vector[0,0],
@@ -34,7 +35,8 @@ GameState = DefStruct.new {{
   player_velocity: Vector[0, 0],
   player_rotation: 0,
   obstacles: [], # Array of obstacles
-  obstacle_countdown: OBSTACLE_SPAWN_INTERVAL
+  obstacle_countdown: OBSTACLE_SPAWN_INTERVAL,
+  restart_countdown: RESTART_INTERVAL
 }}
 
 class GameWindow < Gosu::Window
@@ -71,13 +73,14 @@ class GameWindow < Gosu::Window
 
     @state.player_velocity += delta_time * GRAVITY
     @state.player_position += delta_time * @state.player_velocity
-
-    @state.obstacle_countdown -= delta_time
-    if @state.obstacle_countdown <= 0
-      @state.obstacles <<  Obstacle.new(pos: Vector[width, rand(50...320)])
-      @state.obstacle_countdown += OBSTACLE_SPAWN_INTERVAL
+    
+    if @state.alive
+      @state.obstacle_countdown -= delta_time
+      if @state.obstacle_countdown <= 0
+        @state.obstacles <<  Obstacle.new(pos: Vector[width, rand(50...320)])
+        @state.obstacle_countdown += OBSTACLE_SPAWN_INTERVAL
+      end
     end
-
 
     @state.obstacles.each do |obst|
       obst.pos.x -= delta_time * OBSTACLE_SPEED
@@ -97,12 +100,21 @@ class GameWindow < Gosu::Window
 
     unless @state.alive
       @state.player_rotation += delta_time * DEATH_ROTATIONAL_VELOCITY
+      @state.restart_countdown -= delta_time
+      if @state.restart_countdown <= 0
+        restart_game
+      end  
     end  
   end
 
+  def restart_game
+    @state = GameState.new(scroll_x: @state.scroll_x)
+  end 
+
   def player_is_colliding?
     player_r = player_rect
-    obstacle_rects.find { |obst_r| rects_interct?(player_r, obst_r) }
+    return true if obstacle_rects.find { |obst_r| rects_interct?(player_r, obst_r) }
+    not rects_interct?(player_r, Rect.new(pos: Vector[0,0], size: Vector[width, height]))
   end
 
   def rects_interct?(r1, r2)
