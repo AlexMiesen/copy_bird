@@ -20,6 +20,11 @@ Rect = DefStruct.new{{
   def max_y; pos.y + size.y; end    
 end 
 
+Obstacle = DefStruct.new{{
+  pos: Vector[0,0],
+  player_has_crossed: false
+}}
+
 GameState = DefStruct.new {{
   score: 0,
   started: false,
@@ -28,7 +33,7 @@ GameState = DefStruct.new {{
   player_position: Vector[20, 250], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
   player_rotation: 0,
-  obstacles: [], # Array of Vec
+  obstacles: [], # Array of obstacles
   obstacle_countdown: OBSTACLE_SPAWN_INTERVAL
 }}
 
@@ -69,13 +74,13 @@ class GameWindow < Gosu::Window
 
     @state.obstacle_countdown -= delta_time
     if @state.obstacle_countdown <= 0
-      @state.obstacles << Vector[width, rand(50...320)]
+      @state.obstacles <<  Obstacle.new(pos: Vector[width, rand(50...320)])
       @state.obstacle_countdown += OBSTACLE_SPAWN_INTERVAL
     end
 
 
     @state.obstacles.each do |obst|
-      obst.x -= delta_time * OBSTACLE_SPEED
+      obst.pos.x -= delta_time * OBSTACLE_SPEED
     end
 
     if @state.alive && player_is_colliding?
@@ -112,10 +117,10 @@ class GameWindow < Gosu::Window
     @state.obstacles.each do |obst|
       img_y = @images[:obstacle].height
       #top log
-      @images[:obstacle].draw(obst.x, obst.y - img_y, 0)
+      @images[:obstacle].draw(obst.pos.x, obst.pos.y - img_y, 0)
       scale(1, -1) do
         #bottom log
-        @images[:obstacle].draw(obst.x, -height - img_y + (height - obst.y - OBSTACLE_GAP), 0)
+        @images[:obstacle].draw(obst.pos.x, -height - img_y + (height - obst.pos.y - OBSTACLE_GAP), 0)
       end
     end
 
@@ -143,8 +148,8 @@ class GameWindow < Gosu::Window
     obst_size = Vector[@images[:obstacle].width, @images[:obstacle].height]
 
     @state.obstacles.flat_map do |obstacle|
-    top = Rect.new(pos: Vector[obstacle.x, obstacle.y - img_y],size: obst_size)
-    bottom = Rect.new(pos: Vector[obstacle.x, obstacle.y + OBSTACLE_GAP],size: obst_size)
+    top = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y - img_y],size: obst_size)
+    bottom = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y + OBSTACLE_GAP],size: obst_size)
     [top,bottom]
     end
   end  
