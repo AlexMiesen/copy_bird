@@ -81,7 +81,14 @@ class GameWindow < Gosu::Window
 
     @state.obstacles.each do |obst|
       obst.pos.x -= delta_time * OBSTACLE_SPEED
+
+      if obst.pos.x < @state.player_position.x && !obst.player_has_crossed && @state.alive
+        @state.score += 1
+        obst.player_has_crossed = true
+      end  
     end
+
+    @state.obstacles.reject! { |obst|  obst.pos.x < -@images[:obstacle].width}
 
     if @state.alive && player_is_colliding?
       @state.alive = false
