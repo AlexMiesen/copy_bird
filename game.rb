@@ -40,6 +40,9 @@ GameState = DefStruct.new {{
 }}
 
 class GameWindow < Gosu::Window
+  SAVE_PATH = ENV['HOME'] + '/.copy_bird_save'
+  p SAVE_PATH
+
   def initialize(*args)
     super
     @font = Gosu::Font.new(self, Gosu.default_font_name, 40)
@@ -55,11 +58,21 @@ class GameWindow < Gosu::Window
   def button_down(button)
     case button
     when Gosu::KbEscape then close
+    when Gosu::KbS then save_game
+    when Gosu::KbL then load_game  
     when Gosu::KbSpace
       @state.player_velocity.set!(JUMP_VELOCITY) if @state.alive 
       @state.started = true
     end
   end
+
+  def save_game   
+    File.binwrite(SAVE_PATH, Marshal.dump(@state))
+  end
+  
+  def load_game
+    @state = Marshal.load(File.binread(SAVE_PATH))
+  end  
 
   def update
     delta_time = update_interval / 1000.0
