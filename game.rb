@@ -10,6 +10,7 @@ OBSTACLE_GAP = 140 #pixels
 DEATH_VELOCITY = Vector[50,-500] # pixels per second
 DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
 RESTART_INTERVAL = 3 #seconds
+PLAYER_ANIMATION_FPS = 5.0 # frames per second
 
 Rect = DefStruct.new{{
   pos: Vector[0,0],
@@ -34,10 +35,14 @@ GameState = DefStruct.new {{
   player_position: Vector[20, 250], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
   player_rotation: 0,
+  player_frame: 0,
+  player_frame_remaining: 1.0/PLAYER_ANIMATION_FPS,
   obstacles: [], # Array of obstacles
   obstacle_countdown: OBSTACLE_SPAWN_INTERVAL,
   restart_countdown: RESTART_INTERVAL
 }}
+
+PLAYER_FRAMES = [:player1, :player2, :player3]
 
 class GameWindow < Gosu::Window
   SAVE_PATH = ENV['HOME'] + '/.copy_bird_save'
@@ -49,7 +54,9 @@ class GameWindow < Gosu::Window
     @images = {
       background: Gosu::Image.new(self, 'images/background.png', false),
       foreground: Gosu::Image.new(self, 'images/foreground.png', true),
-      player: Gosu::Image.new(self, 'images/fruity_1.png', false),
+      player1: Gosu::Image.new(self, 'images/fruity_1.png', false),
+      player2: Gosu::Image.new(self, 'images/fruity_2.png', false),
+      player3: Gosu::Image.new(self, 'images/fruity_3.png', false),
       obstacle: Gosu::Image.new(self, 'images/obstacle.png', false)
     }
     @state = GameState.new
@@ -81,6 +88,12 @@ class GameWindow < Gosu::Window
       if @state.scroll_x > @images[:foreground].width
         @state.scroll_x = 0
       end
+
+    @state.player_frame_remaining -= delta_time
+    while @state.player_frame_remaining <= 0
+      @state.player_frame = (@state.player_frame + 1) % PLAYER_FRAMES.size
+      @state.player_frame_remaining += 1.0/PLAYER_ANIMATION_FPS
+    end  
 
     return unless @state.started  
 
@@ -156,7 +169,7 @@ class GameWindow < Gosu::Window
       end
     end
 
-    @images[:player].draw_rot(
+    player_frame.draw_rot(
       @state.player_position.x, @state.player_position.y, 
       0, @state.player_rotation,
       0,
@@ -168,10 +181,14 @@ class GameWindow < Gosu::Window
     @font.draw_rel(@state.score, width/2.0, 60, 0, 0.5, 0.5)
   end
 
+  def player_frame
+    @images[PLAYER_FRAMES[@state.player_frame]]
+  end
+
   def player_rect
     Rect.new(
       pos: @state.player_position, 
-      size: Vector[@images[:player].width, @images[:player].height]
+      size: Vector[player_frame.width, player_frame.height]
     )
   end
 
