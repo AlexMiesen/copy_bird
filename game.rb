@@ -1,6 +1,7 @@
 require 'gosu'
 require_relative 'defstruct'
 require_relative 'vector'
+require_relative 'timer'
 
 GRAVITY = Vector[0, 600] #this is an acceleration so pixels per second per second i.e = pixels/s^2
 JUMP_VELOCITY = Vector[0, -300]
@@ -36,13 +37,13 @@ GameState = DefStruct.new {{
   player_velocity: Vector[0, 0],
   player_rotation: 0,
   player_frame: 0,
-  player_frame_remaining: 1.0/PLAYER_ANIMATION_FPS,
+  player_animation_timer: Timer.new(1.0/PLAYER_ANIMATION_FPS),
   obstacles: [], # Array of obstacles
-  obstacle_countdown: OBSTACLE_SPAWN_INTERVAL,
+  obstacle_timer: Timer.new(OBSTACLE_SPAWN_INTERVAL),
   restart_countdown: RESTART_INTERVAL
 }}
 
-PLAYER_FRAMES = [:player1, :player2, :player3]
+PLAYER_FRAMES = [:player1, :player2, :player3, :player2] # we can remove player2 behind player 3 for a different type of animation
 
 class GameWindow < Gosu::Window
   SAVE_PATH = ENV['HOME'] + '/.copy_bird_save'
@@ -89,22 +90,18 @@ class GameWindow < Gosu::Window
         @state.scroll_x = 0
       end
 
-    @state.player_frame_remaining -= delta_time
-    while @state.player_frame_remaining <= 0
+    @state.player_animation_timer.update(delta_time) do
       @state.player_frame = (@state.player_frame + 1) % PLAYER_FRAMES.size
-      @state.player_frame_remaining += 1.0/PLAYER_ANIMATION_FPS
     end  
 
-    return unless @state.started  
+    return unless @state.started
 
     @state.player_velocity += delta_time * GRAVITY
     @state.player_position += delta_time * @state.player_velocity
     
     if @state.alive
-      @state.obstacle_countdown -= delta_time
-      if @state.obstacle_countdown <= 0
+      @state.obstacle_timer.update(delta_time) do
         @state.obstacles <<  Obstacle.new(pos: Vector[width, rand(50...320)])
-        @state.obstacle_countdown += OBSTACLE_SPAWN_INTERVAL
       end
     end
 
