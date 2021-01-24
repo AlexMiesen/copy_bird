@@ -2,6 +2,7 @@ require 'gosu'
 require_relative 'defstruct'
 require_relative 'vector'
 require_relative 'timer'
+require_relative 'animation'
 
 GRAVITY = Vector[0, 600] #this is an acceleration so pixels per second per second i.e = pixels/s^2
 JUMP_VELOCITY = Vector[0, -300]
@@ -12,6 +13,7 @@ DEATH_VELOCITY = Vector[50,-500] # pixels per second
 DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
 RESTART_INTERVAL = 3 #seconds
 PLAYER_ANIMATION_FPS = 5.0 # frames per second
+PLAYER_FRAMES = [:player1, :player2, :player3, :player2] # we can remove player2 behind player 3 for a different type of animation
 
 Rect = DefStruct.new{{
   pos: Vector[0,0],
@@ -36,14 +38,12 @@ GameState = DefStruct.new {{
   player_position: Vector[20, 250], # 20 moves the player slightly away from the left of the screen
   player_velocity: Vector[0, 0],
   player_rotation: 0,
-  player_frame: 0,
-  player_animation_timer: Timer.new(1.0/PLAYER_ANIMATION_FPS),
+  player_animation: Animation.new(PLAYER_ANIMATION_FPS,PLAYER_FRAMES),
   obstacles: [], # Array of obstacles
-  obstacle_timer: Timer.new(OBSTACLE_SPAWN_INTERVAL),
-  restart_countdown: RESTART_INTERVAL
+  obstacle_timer: Timer::Looping.new(OBSTACLE_SPAWN_INTERVAL),
+  restart_timer: Timer::OneShot.new(RESTART_INTERVAL)
 }}
 
-PLAYER_FRAMES = [:player1, :player2, :player3, :player2] # we can remove player2 behind player 3 for a different type of animation
 
 class GameWindow < Gosu::Window
   SAVE_PATH = ENV['HOME'] + '/.copy_bird_save'
@@ -90,10 +90,7 @@ class GameWindow < Gosu::Window
         @state.scroll_x = 0
       end
 
-    @state.player_animation_timer.update(delta_time) do
-      @state.player_frame = (@state.player_frame + 1) % PLAYER_FRAMES.size
-    end  
-
+    @state.player_animation.update(delta_time)
     return unless @state.started
 
     @state.player_velocity += delta_time * GRAVITY
@@ -107,7 +104,6 @@ class GameWindow < Gosu::Window
 
     @state.obstacles.each do |obst|
       obst.pos.x -= delta_time * OBSTACLE_SPEED
-
       if obst.pos.x < @state.player_position.x && !obst.player_has_crossed && @state.alive
         @state.score += 1
         obst.player_has_crossed = true
@@ -123,10 +119,7 @@ class GameWindow < Gosu::Window
 
     unless @state.alive
       @state.player_rotation += delta_time * DEATH_ROTATIONAL_VELOCITY
-      @state.restart_countdown -= delta_time
-      if @state.restart_countdown <= 0
-        restart_game
-      end  
+      @state.restart_timer.update(delta_time) { restart_game }
     end  
   end
 
@@ -179,7 +172,7 @@ class GameWindow < Gosu::Window
   end
 
   def player_frame
-    @images[PLAYER_FRAMES[@state.player_frame]]
+    @images[@state.player_animation.frame]
   end
 
   def player_rect
