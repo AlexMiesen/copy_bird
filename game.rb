@@ -3,7 +3,6 @@ require_relative 'defstruct'
 require_relative 'vector'
 require_relative 'timer'
 require_relative 'animation'
-
 GRAVITY = Vector[0, 600] #this is an acceleration so pixels per second per second i.e = pixels/s^2
 JUMP_VELOCITY = Vector[0, -300]
 DEATH_VELOCITY = Vector[50,-500] # pixels per second
@@ -11,6 +10,7 @@ DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
 RESTART_INTERVAL = 3 #seconds
 PLAYER_ANIMATION_FPS = 5.0 # frames per second
 PLAYER_FRAMES = [:player1, :player2, :player3, :player2] # we can remove player2 behind player 3 for a different type of animation
+OBSTACLE_PADDING = 50 #pixels
 DIFFICULTIES = {
 	easy: {
 		speed: 150, #pixels/s
@@ -19,12 +19,12 @@ DIFFICULTIES = {
 	},
 	medium: {
 		speed: 200, # pixels/s
-		obstacle_gap: 140, #pixels
+		obstacle_gap: 180, #pixels
 		obstacle_spawn_interval: 1.3, #seconds
 	},
 	hard: {
-		speed: 300, #pixels/s
-		obstacle_gap: 110, #pixels
+		speed: 400, #pixels/s
+		obstacle_gap: 160, #pixels
 		obstacle_spawn_interval: 1, #second
 	},
 }
@@ -43,7 +43,8 @@ end
 
 Obstacle = DefStruct.new{{
   pos: Vector[0,0],
-  player_has_crossed: false
+	player_has_crossed: false,
+	gap: DIFFICULTIES[:medium][:obstacle_gap],
 }}
 
 GameState = DefStruct.new {{
@@ -122,8 +123,13 @@ class GameWindow < Gosu::Window
     @state.player_position += delta_time * @state.player_velocity
     
     if @state.alive
-      @state.obstacle_timer.update(delta_time) do
-        @state.obstacles <<  Obstacle.new(pos: Vector[width, rand(50...320)])
+			@state.obstacle_timer.update(delta_time) do
+				gap = difficulty[:obstacle_gap]
+				lower_bound = height - OBSTACLE_PADDING - gap #height is the height of the screen 
+        @state.obstacles <<  Obstacle.new(
+					pos: Vector[width, rand(OBSTACLE_PADDING..lower_bound)], 
+					gap: gap
+				)
       end
     end
 
@@ -148,8 +154,10 @@ class GameWindow < Gosu::Window
     end  
   end
 
-  def restart_game
-    @state = GameState.new(scroll_x: @state.scroll_x)
+	def restart_game
+		old_difficulty = @state.difficulty
+		@state = GameState.new(scroll_x: @state.scroll_x)
+		@state.difficulty = old_difficulty  # could also do set_difficulty(old_difficulty) for this line 
   end 
 
   def player_is_colliding?
@@ -180,7 +188,7 @@ class GameWindow < Gosu::Window
       @images[:obstacle].draw(obst.pos.x, obst.pos.y - img_y, 0)
       scale(1, -1) do
         #bottom log
-        @images[:obstacle].draw(obst.pos.x, -height - img_y + (height - obst.pos.y - difficulty[:obstacle_gap]), 0)
+        @images[:obstacle].draw(obst.pos.x, -height - img_y + (height - obst.pos.y - obst.gap), 0)
       end
     end
 
@@ -194,7 +202,7 @@ class GameWindow < Gosu::Window
     #debug_draw
 
 		@font.draw_rel(@state.score, width/2.0, 60, 0, 0.5, 0.5)
-		@font.draw_text(@state.difficulty, (width/2.0) - 50 , 5, 0)
+		@font.draw_rel(@state.difficulty.to_s, width - 10,  height - 10, 0, 1.0, 1.0)
 	end
 	
 	def difficulty
@@ -218,7 +226,7 @@ class GameWindow < Gosu::Window
 
     @state.obstacles.flat_map do |obstacle|
     top = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y - img_y],size: obst_size)
-    bottom = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y + difficulty[:obstacle_gap]],size: obst_size)
+    bottom = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y + obstacle.gap],size: obst_size)
     [top,bottom]
     end
   end  
