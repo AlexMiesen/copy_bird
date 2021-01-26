@@ -3,7 +3,7 @@ require_relative 'timer'
 class Animation
     def initialize(frames_per_second, frames)
         @frames = frames
-        @timer = Timer:Looping.new(1.0/frames_per_second)
+        @timer = Timer::Looping.new(1.0/frames_per_second)
         @current_idx = 0
     end
 

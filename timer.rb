@@ -6,13 +6,16 @@ module Timer
         end
 
         def update(seconds_elapsed)
-            @interval_remaining -= seconds_elapsed
-
-            while @interval_remaining <= 0
-                yield
-                @interval_remaining += @interval
-            end
-        end
+          @interval_remaining -= seconds_elapsed
+					while @interval_remaining <= 0
+							yield
+							@interval_remaining += @interval
+					end
+				end
+				
+				def interval=(new_interval)
+					@interval = new_interval
+				end
     end
 
     class OneShot

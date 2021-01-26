@@ -6,14 +6,30 @@ require_relative 'animation'
 
 GRAVITY = Vector[0, 600] #this is an acceleration so pixels per second per second i.e = pixels/s^2
 JUMP_VELOCITY = Vector[0, -300]
-OBSTACLE_SPEED = 200 #pixels/s
-OBSTACLE_SPAWN_INTERVAL = 1.3 #seconds
-OBSTACLE_GAP = 140 #pixels
 DEATH_VELOCITY = Vector[50,-500] # pixels per second
 DEATH_ROTATIONAL_VELOCITY = 360#degrees per second
 RESTART_INTERVAL = 3 #seconds
 PLAYER_ANIMATION_FPS = 5.0 # frames per second
 PLAYER_FRAMES = [:player1, :player2, :player3, :player2] # we can remove player2 behind player 3 for a different type of animation
+DIFFICULTIES = {
+	easy: {
+		speed: 150, #pixels/s
+		obstacle_gap: 220, #pixels
+		obstacle_spawn_interval: 2.0 #seconds
+	},
+	medium: {
+		speed: 200, # pixels/s
+		obstacle_gap: 140, #pixels
+		obstacle_spawn_interval: 1.3, #seconds
+	},
+	hard: {
+		speed: 300, #pixels/s
+		obstacle_gap: 110, #pixels
+		obstacle_spawn_interval: 1, #second
+	},
+}
+
+#adding difficulty levels 1:03:21
 
 Rect = DefStruct.new{{
   pos: Vector[0,0],
@@ -31,6 +47,7 @@ Obstacle = DefStruct.new{{
 }}
 
 GameState = DefStruct.new {{
+	difficulty: :medium,
   score: 0,
   started: false,
   alive: true,
@@ -40,7 +57,7 @@ GameState = DefStruct.new {{
   player_rotation: 0,
   player_animation: Animation.new(PLAYER_ANIMATION_FPS,PLAYER_FRAMES),
   obstacles: [], # Array of obstacles
-  obstacle_timer: Timer::Looping.new(OBSTACLE_SPAWN_INTERVAL),
+  obstacle_timer: Timer::Looping.new(DIFFICULTIES[:medium][:obstacle_spawn_interval]),
   restart_timer: Timer::OneShot.new(RESTART_INTERVAL)
 }}
 
@@ -67,13 +84,21 @@ class GameWindow < Gosu::Window
     case button
     when Gosu::KbEscape then close
     when Gosu::KbS then save_game
-    when Gosu::KbL then load_game  
+		when Gosu::KbL then load_game
+		when Gosu::Kb1 then set_difficulty(:easy)
+		when Gosu::Kb2 then set_difficulty(:medium)
+		when Gosu::Kb3 then set_difficulty(:hard)
     when Gosu::KbSpace
       @state.player_velocity.set!(JUMP_VELOCITY) if @state.alive 
       @state.started = true
     end
   end
 
+	def set_difficulty(name)
+		@state.difficulty = name
+		@state.obstacle_timer.interval = DIFFICULTIES[name][:obstacle_spawn_interval]
+
+	end
   def save_game   
     File.binwrite(SAVE_PATH, Marshal.dump(@state))
   end
@@ -85,7 +110,7 @@ class GameWindow < Gosu::Window
   def update
     delta_time = update_interval / 1000.0
 
-    @state.scroll_x += delta_time * OBSTACLE_SPEED * 0.5
+    @state.scroll_x += delta_time * difficulty[:speed] * 0.5
       if @state.scroll_x > @images[:foreground].width
         @state.scroll_x = 0
       end
@@ -103,7 +128,7 @@ class GameWindow < Gosu::Window
     end
 
     @state.obstacles.each do |obst|
-      obst.pos.x -= delta_time * OBSTACLE_SPEED
+      obst.pos.x -= delta_time * difficulty[:speed]
       if obst.pos.x < @state.player_position.x && !obst.player_has_crossed && @state.alive
         @state.score += 1
         obst.player_has_crossed = true
@@ -155,7 +180,7 @@ class GameWindow < Gosu::Window
       @images[:obstacle].draw(obst.pos.x, obst.pos.y - img_y, 0)
       scale(1, -1) do
         #bottom log
-        @images[:obstacle].draw(obst.pos.x, -height - img_y + (height - obst.pos.y - OBSTACLE_GAP), 0)
+        @images[:obstacle].draw(obst.pos.x, -height - img_y + (height - obst.pos.y - difficulty[:obstacle_gap]), 0)
       end
     end
 
@@ -169,7 +194,11 @@ class GameWindow < Gosu::Window
     #debug_draw
 
     @font.draw_rel(@state.score, width/2.0, 60, 0, 0.5, 0.5)
-  end
+	end
+	
+	def difficulty
+		DIFFICULTIES[@state.difficulty]
+	end 
 
   def player_frame
     @images[@state.player_animation.frame]
@@ -188,7 +217,7 @@ class GameWindow < Gosu::Window
 
     @state.obstacles.flat_map do |obstacle|
     top = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y - img_y],size: obst_size)
-    bottom = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y + OBSTACLE_GAP],size: obst_size)
+    bottom = Rect.new(pos: Vector[obstacle.pos.x, obstacle.pos.y + difficulty[:obstacle_gap]],size: obst_size)
     [top,bottom]
     end
   end  
