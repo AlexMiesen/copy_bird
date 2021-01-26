@@ -193,7 +193,8 @@ class GameWindow < Gosu::Window
     #uncomment this out to turn the debugger on
     #debug_draw
 
-    @font.draw_rel(@state.score, width/2.0, 60, 0, 0.5, 0.5)
+		@font.draw_rel(@state.score, width/2.0, 60, 0, 0.5, 0.5)
+		@font.draw_text(@state.difficulty, (width/2.0) - 50 , 5, 0)
 	end
 	
 	def difficulty

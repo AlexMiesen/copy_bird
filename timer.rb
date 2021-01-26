@@ -1,5 +1,6 @@
 module Timer
-    class Looping
+		class Looping
+			attr_writer :interval
         def initialize(interval)
             @interval = Float(interval)
             @interval_remaining = @interval
@@ -11,10 +12,6 @@ module Timer
 							yield
 							@interval_remaining += @interval
 					end
-				end
-				
-				def interval=(new_interval)
-					@interval = new_interval
 				end
     end
 
