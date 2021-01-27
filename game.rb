@@ -3,6 +3,7 @@ require_relative 'defstruct'
 require_relative 'vector'
 require_relative 'timer'
 require_relative 'animation'
+
 GRAVITY = Vector[0, 600] #this is an acceleration so pixels per second per second i.e = pixels/s^2
 JUMP_VELOCITY = Vector[0, -300]
 DEATH_VELOCITY = Vector[50,-500] # pixels per second
@@ -29,7 +30,6 @@ DIFFICULTIES = {
 	},
 }
 
-#adding difficulty levels 1:03:21
 
 Rect = DefStruct.new{{
   pos: Vector[0,0],
@@ -47,6 +47,15 @@ Obstacle = DefStruct.new{{
 	gap: DIFFICULTIES[:medium][:obstacle_gap],
 }}
 
+Particle = DefStruct.new{{
+	pos: Vector[0,0],
+	velocity: Vector[0,0],
+	rotation: 0,
+	rotational_velocity: 0,
+	scale: 1.0,
+	tint: Gosu::Color::WHITE,
+}}
+
 GameState = DefStruct.new {{
 	difficulty: :medium,
   score: 0,
@@ -57,15 +66,14 @@ GameState = DefStruct.new {{
   player_velocity: Vector[0, 0],
   player_rotation: 0,
   player_animation: Animation.new(PLAYER_ANIMATION_FPS,PLAYER_FRAMES),
-  obstacles: [], # Array of obstacles
+	obstacles: [], # Array of obstacles
+	particles: [], #Array of particiles
   obstacle_timer: Timer::Looping.new(DIFFICULTIES[:medium][:obstacle_spawn_interval]),
   restart_timer: Timer::OneShot.new(RESTART_INTERVAL)
 }}
 
-
 class GameWindow < Gosu::Window
   SAVE_PATH = ENV['HOME'] + '/.copy_bird_save'
-  p SAVE_PATH
 
   def initialize(*args)
     super
@@ -76,7 +84,8 @@ class GameWindow < Gosu::Window
       player1: Gosu::Image.new(self, 'images/fruity_1.png', false),
       player2: Gosu::Image.new(self, 'images/fruity_2.png', false),
       player3: Gosu::Image.new(self, 'images/fruity_3.png', false),
-      obstacle: Gosu::Image.new(self, 'images/obstacle.png', false)
+			obstacle: Gosu::Image.new(self, 'images/obstacle.png', false),
+			particle: Gosu::Image.new(self, 'images/particle.png', false)
     }
     @state = GameState.new
   end
@@ -116,7 +125,13 @@ class GameWindow < Gosu::Window
         @state.scroll_x = 0
       end
 
-    @state.player_animation.update(delta_time)
+		@state.player_animation.update(delta_time)
+		
+		@state.particles.each do |part|
+			part.velocity += delta_time * GRAVITY
+			part.pos += delta_time * part.velocity
+		end	
+
     return unless @state.started
 
     @state.player_velocity += delta_time * GRAVITY
@@ -137,7 +152,8 @@ class GameWindow < Gosu::Window
       obst.pos.x -= delta_time * difficulty[:speed]
       if obst.pos.x < @state.player_position.x && !obst.player_has_crossed && @state.alive
         @state.score += 1
-        obst.player_has_crossed = true
+				obst.player_has_crossed = true
+				particle_burst
       end  
     end
 
@@ -152,7 +168,25 @@ class GameWindow < Gosu::Window
       @state.player_rotation += delta_time * DEATH_ROTATIONAL_VELOCITY
       @state.restart_timer.update(delta_time) { restart_game }
     end  
-  end
+	end
+	
+	def particle_burst
+		10.times do
+			@state.particles << Particle.new(
+				pos: Vector[width/2.0, 60],
+				velocity: Vector[rand(-100..100), rand(-300..-10)],
+				rotation: rand(0..360),
+				rotational_velocity: rand(-360..360),
+				scale: rand(0.2..1.0),
+				tint: Gosu::Color.new(
+					255,
+					rand(0..255),
+					rand(0..255),
+					rand(0..255),
+				),
+			)
+		end
+	end
 
 	def restart_game
 		old_difficulty = @state.difficulty
@@ -178,8 +212,16 @@ class GameWindow < Gosu::Window
   end
 
   def draw
-    @images[:background].draw(0, 0, 0)
-    @images[:foreground].draw(-@state.scroll_x, 0, 0)
+		@images[:background].draw(0, 0, 0)
+
+		@state.particles.each do |part|
+			@images[:particle].draw_rot(
+				part.pos.x, part.pos.y, 0,
+				part.rotation,
+			)
+		end
+		
+		@images[:foreground].draw(-@state.scroll_x, 0, 0)
     @images[:foreground].draw(-@state.scroll_x + @images[:foreground].width, 0, 0)
 
     @state.obstacles.each do |obst|
