@@ -219,6 +219,7 @@ class GameWindow < Gosu::Window
 			@images[:particle].draw_rot(
 				part.pos.x, part.pos.y, 0,
 				part.rotation,
+				0.5, 0.5, 1.0,1.0, part.tint
 			)
 		end
 		
