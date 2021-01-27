@@ -131,7 +131,8 @@ class GameWindow < Gosu::Window
 			part.velocity += delta_time * GRAVITY
 			part.pos += delta_time * part.velocity
 			part.rotation += delta_time * part.rotational_velocity
-		end	
+		end
+		@state.particles.reject! {|parts| parts.pos.y >= height} #removes all particles when they fall off the screen
 
     return unless @state.started
 
@@ -172,18 +173,18 @@ class GameWindow < Gosu::Window
 	end
 	
 	def particle_burst
-		10.times do
+		30.times do
 			@state.particles << Particle.new(
 				pos: Vector[width/2.0, 60],
 				velocity: Vector[rand(-100..100), rand(-300..-10)],
 				rotation: rand(0..360),
 				rotational_velocity: rand(-360..360),
-				scale: rand(0.2..1.0),
+				scale: rand(0.5..1.0),
 				tint: Gosu::Color.new(
 					255,
-					rand(0..255),
-					rand(0..255),
-					rand(0..255),
+					rand(150..255), #change the 150 to a lower number for a darker colour
+					rand(150..255),
+					rand(150..255),
 				),
 			)
 		end
@@ -219,7 +220,9 @@ class GameWindow < Gosu::Window
 			@images[:particle].draw_rot(
 				part.pos.x, part.pos.y, 0,
 				part.rotation,
-				0.5, 0.5, 1.0,1.0, part.tint
+				0.5, 0.5, 
+				part.scale, part.scale,
+				part.tint
 			)
 		end
 		
