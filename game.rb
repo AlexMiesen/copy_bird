@@ -130,6 +130,7 @@ class GameWindow < Gosu::Window
 		@state.particles.each do |part|
 			part.velocity += delta_time * GRAVITY
 			part.pos += delta_time * part.velocity
+			part.rotation += delta_time * part.rotational_velocity
 		end	
 
     return unless @state.started
