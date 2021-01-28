@@ -30,7 +30,6 @@ DIFFICULTIES = {
 	},
 }
 
-
 Rect = DefStruct.new{{
   pos: Vector[0,0],
   size: Vector[0,0]
@@ -77,7 +76,9 @@ class GameWindow < Gosu::Window
 
   def initialize(*args)
     super
-    @font = Gosu::Font.new(self, Gosu.default_font_name, 40)
+		@font = Gosu::Font.new(self, Gosu.default_font_name, 40)
+		@music = Gosu::Song.new(self, 'audio/music.mp3')
+		@music.play(true)
     @images = {
       background: Gosu::Image.new(self, 'images/background.png', false),
       foreground: Gosu::Image.new(self, 'images/foreground.png', true),
@@ -86,8 +87,14 @@ class GameWindow < Gosu::Window
       player3: Gosu::Image.new(self, 'images/fruity_3.png', false),
 			obstacle: Gosu::Image.new(self, 'images/obstacle.png', false),
 			particle: Gosu::Image.new(self, 'images/gaytime.png', false)
-    }
-    @state = GameState.new
+		}
+		@sounds = {
+			flap: Gosu::Sample.new(self, 'audio/jump.wav'),
+			score: Gosu::Sample.new(self, 'audio/coin.wav'),
+		}
+
+		@state = GameState.new
+		
   end
 
   def button_down(button)
@@ -98,10 +105,13 @@ class GameWindow < Gosu::Window
 		when Gosu::Kb1 then set_difficulty(:easy)
 		when Gosu::Kb2 then set_difficulty(:medium)
 		when Gosu::Kb3 then set_difficulty(:hard)
-    when Gosu::KbSpace
-      @state.player_velocity.set!(JUMP_VELOCITY) if @state.alive 
-      @state.started = true
-    end
+		when Gosu::KbSpace
+			if @state.alive 	
+				@state.player_velocity.set!(JUMP_VELOCITY) 
+				@state.started = true
+				@sounds[:flap].play(0.3, rand(0.9..1.1))
+			end
+		end
   end
 
 	def set_difficulty(name)
@@ -153,7 +163,8 @@ class GameWindow < Gosu::Window
     @state.obstacles.each do |obst|
       obst.pos.x -= delta_time * difficulty[:speed]
       if obst.pos.x < @state.player_position.x && !obst.player_has_crossed && @state.alive
-        @state.score += 1
+				@state.score += 1
+				@sounds[:score].play(0.5, 0.4 + @state.score * 0.05)
 				obst.player_has_crossed = true
 				particle_burst
       end  
