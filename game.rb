@@ -119,9 +119,9 @@ class GameWindow < Gosu::Window
     @images = {
       background: Gosu::Image.new(self, 'images/background.png', false),
       foreground: Gosu::Image.new(self, 'images/foreground.png', true),
-      player1: Gosu::Image.new(self, 'images/kookaburra_1.png', false),
-      player2: Gosu::Image.new(self, 'images/kookaburra_2.png', false),
-      player3: Gosu::Image.new(self, 'images/kookaburra_3.png', false),
+      player1: Gosu::Image.new(self, 'images/kook_1.png', false),
+      player2: Gosu::Image.new(self, 'images/kook_2.png', false),
+      player3: Gosu::Image.new(self, 'images/kook_3.png', false),
 			obstacle: Gosu::Image.new(self, 'images/obstacle.png', false),
 			particle: Gosu::Image.new(self, 'images/gaytime.png', false)
 		}
